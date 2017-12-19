@@ -29,16 +29,10 @@ DPKG_CONF_QUALS="--force-confold --force-confdef"
 # The OM_PKG symbol should contain something like:
 #       scx-1.5.1-115.rhel.6.x64 (script adds .rpm or .deb, as appropriate)
 # Note that for non-Linux platforms, this symbol should contain full filename.
-#
-# PROVIDER_ONLY is normally set to '0'. Set to non-zero if you wish to build a
-# version of SCX that is only the provider (no OMI, no bundled packages). This
-# essentially provides a "scx-cimprov" type package if just the provider alone
-# must be included as part of some other package.
 
 TAR_FILE=<TAR_FILE>
 OM_PKG=<OM_PKG>
 OMI_PKG=<OMI_PKG>
-PROVIDER_ONLY=0
 
 SCRIPT_LEN=<SCRIPT_LEN>
 SCRIPT_LEN_PLUS_ONE=<SCRIPT_LEN+1>
@@ -592,16 +586,14 @@ case "$installMode" in
     I)
         echo "Installing cross-platform agent ..."
 
-        if [ $PROVIDER_ONLY -eq 0 ]; then
-            check_if_pkg_is_installed omi
-            if [ $? -eq 0 ]; then
-                shouldInstall_omi
-                pkg_upd $OMI_PKG omi $?
-                OMI_EXIT_STATUS=$?
-            else
-                pkg_add $OMI_PKG omi
-                OMI_EXIT_STATUS=$?
-            fi
+        check_if_pkg_is_installed omi
+        if [ $? -eq 0 ]; then
+            shouldInstall_omi
+            pkg_upd $OMI_PKG omi $?
+            OMI_EXIT_STATUS=$?
+        else
+            pkg_add $OMI_PKG omi
+            OMI_EXIT_STATUS=$?
         fi
 
         pkg_add $OM_PKG scx
@@ -615,30 +607,27 @@ case "$installMode" in
             fi
         fi
 
-        if [ $PROVIDER_ONLY -eq 0 ]; then
-            # Install bundled providers
-            [ -n "${forceFlag}" ] && FORCE="--force" || FORCE=""
-            for i in *-oss-test.sh; do
-                # If filespec didn't expand, break out of loop
-                [ ! -f $i ] && break
-                ./$i
-                if [ $? -eq 0 ]; then
-                    OSS_BUNDLE=`basename $i -oss-test.sh`
-                    ./${OSS_BUNDLE}-cimprov-*.sh --install $FORCE $restartDependencies
-                    TEMP_STATUS=$?
-                    [ $TEMP_STATUS -ne 0 ] && BUNDLE_EXIT_STATUS="$TEMP_STATUS"
-                fi
-            done
-        fi
+        # Install bundled providers
+        [ -n "${forceFlag}" ] && FORCE="--force" || FORCE=""
+        for i in *-oss-test.sh; do
+            # If filespec didn't expand, break out of loop
+            [ ! -f $i ] && break
+            ./$i
+            if [ $? -eq 0 ]; then
+                OSS_BUNDLE=`basename $i -oss-test.sh`
+                ./${OSS_BUNDLE}-cimprov-*.sh --install $FORCE $restartDependencies
+                TEMP_STATUS=$?
+                [ $TEMP_STATUS -ne 0 ] && BUNDLE_EXIT_STATUS="$TEMP_STATUS"
+            fi
+        done
         ;;
 
     U)
         echo "Updating cross-platform agent ..."
-        if [ $PROVIDER_ONLY -eq 0 ]; then
-            shouldInstall_omi
-            pkg_upd $OMI_PKG omi $?
-            OMI_EXIT_STATUS=$?
-        fi
+
+        shouldInstall_omi
+        pkg_upd $OMI_PKG omi $?
+        OMI_EXIT_STATUS=$?
 
         shouldInstall_scx
         pkg_upd $OM_PKG scx $?
@@ -652,22 +641,20 @@ case "$installMode" in
             fi
         fi
 
-        if [ $PROVIDER_ONLY -eq 0 ]; then
-            # Upgrade bundled providers
-            [ -n "${forceFlag}" ] && FORCE="--force" || FORCE=""
-            echo "----- Updating bundled packages -----"
-            for i in *-oss-test.sh; do
-                # If filespec didn't expand, break out of loop
-                [ ! -f $i ] && break
-                ./$i
-                if [ $? -eq 0 ]; then
-                    OSS_BUNDLE=`basename $i -oss-test.sh`
-                    ./${OSS_BUNDLE}-cimprov-*.sh --upgrade $FORCE $restartDependencies
-                    TEMP_STATUS=$?
-                    [ $TEMP_STATUS -ne 0 ] && BUNDLE_EXIT_STATUS="$TEMP_STATUS"
-                fi
-            done
-        fi
+        # Upgrade bundled providers
+        [ -n "${forceFlag}" ] && FORCE="--force" || FORCE=""
+        echo "----- Updating bundled packages -----"
+        for i in *-oss-test.sh; do
+            # If filespec didn't expand, break out of loop
+            [ ! -f $i ] && break
+            ./$i
+            if [ $? -eq 0 ]; then
+                OSS_BUNDLE=`basename $i -oss-test.sh`
+                ./${OSS_BUNDLE}-cimprov-*.sh --upgrade $FORCE $restartDependencies
+                TEMP_STATUS=$?
+                [ $TEMP_STATUS -ne 0 ] && BUNDLE_EXIT_STATUS="$TEMP_STATUS"
+            fi
+        done
         ;;
 
     *)

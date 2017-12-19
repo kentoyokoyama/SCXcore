@@ -60,7 +60,6 @@ usage()
     echo "    tar-file is the name of the tar file that contains the following packages"
     echo "    scx-package-name is the name of the scx installation package"
     echo "    omi-package-name is the name of the omi installation package"
-    echo "    provider-only is 1 (scx-cimprov style kit) or 0 (scx combined kit)"
     echo "  If omi-package-name is empty, then we assume universal SSL directories for OMI"
     exit 1
 }
@@ -136,16 +135,8 @@ if [ -z "$4" ]; then
     exit 1
 fi
 
-if [ -z "$6" ]; then
-    echo "Missing parameter: provider-only" >&2
-    echo ""
-    usage
-    exit 1
-fi
-
 SCX_PACKAGE=`echo $4 | sed -e 's/.rpm$//' -e 's/.deb$//'`
 OMI_PACKAGE=`echo $5 | sed -e 's/.rpm$//' -e 's/.deb$//'`
-PROVIDER_ONLY=$6
 
 if [ ! -f "$2/$3" ]; then
     echo "Tar file \"$2/$3\" does not exist"
@@ -204,9 +195,6 @@ fi
 do_sed bundle_skel.sh "s/TAR_FILE=<TAR_FILE>/TAR_FILE=$3/"
 do_sed bundle_skel.sh "s/OM_PKG=<OM_PKG>/OM_PKG=$SCX_PACKAGE/"
 do_sed bundle_skel.sh "s/OMI_PKG=<OMI_PKG>/OMI_PKG=$OMI_PACKAGE/"
-
-do_sed bundle_skel.sh "s/PROVIDER_ONLY=0/PROVIDER_ONLY=$PROVIDER_ONLY/"
-
 
 SCRIPT_LEN=`wc -l < bundle_skel.sh | sed -e 's/ //g'`
 SCRIPT_LEN_PLUS_ONE="$((SCRIPT_LEN + 1))"
